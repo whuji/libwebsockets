@@ -42,6 +42,7 @@ option(LWS_WITH_ACME "Enable support for ACME automatic cert acquisition + maint
 # TLS library options... all except mbedTLS are basically OpenSSL variants.
 #
 option(LWS_WITH_SSL "Include SSL support (defaults to OpenSSL or similar, mbedTLS if LWS_WITH_MBEDTLS is set)" ON)
+option(LWS_WITH_LIBRESSL "Include LibreSSL support" OFF)
 option(LWS_WITH_MBEDTLS "Use mbedTLS (>=2.0) replacement for OpenSSL. When setting this, you also may need to specify LWS_MBEDTLS_LIBRARIES and LWS_MBEDTLS_INCLUDE_DIRS" OFF)
 option(LWS_WITH_BORINGSSL "Use BoringSSL replacement for OpenSSL" OFF)
 option(LWS_WITH_CYASSL "Use CyaSSL replacement for OpenSSL. When setting this, you also need to specify LWS_CYASSL_LIBRARIES and LWS_CYASSL_INCLUDE_DIRS" OFF)
@@ -374,6 +375,10 @@ set(LWS_SQLITE3_INCLUDE_DIRS CACHE PATH "Path to the sqlite3 include directory")
 set(LWS_LIBEVENT_INCLUDE_DIRS CACHE PATH "Path to the libevent include directory")
 set(LWS_LIBEVENT_LIBRARIES CACHE PATH "Path to the libevent library")
 
+
+if (LWS_WITH_LIBRESSL)
+	set(LWS_WITH_SSL ON)
+endif()
 
 if (NOT LWS_WITH_SSL)
 	set(LWS_WITHOUT_BUILTIN_SHA1 OFF)
@@ -1010,17 +1015,10 @@ endif()
 if (WIN32)
 	set(WIN32_HELPERS_PATH win32port/win32helpers)
 	include_directories(${WIN32_HELPERS_PATH})
-
-		if (WIN32)
-			list(APPEND SOURCES
-				${WIN32_HELPERS_PATH}/gettimeofday.c
-			)
-
-			list(APPEND HDR_PRIVATE
-				${WIN32_HELPERS_PATH}/gettimeofday.h
-			)
-		endif(WIN32)
-
+	if (NOT LWS_WITH_LIBRESSL)
+		list(APPEND SOURCES ${WIN32_HELPERS_PATH}/gettimeofday.c)
+		list(APPEND HDR_PRIVATE ${WIN32_HELPERS_PATH}/gettimeofday.h)
+	endif()
 else()
 	# Unix.
 	if (NOT LWS_WITHOUT_DAEMONIZE)
@@ -1562,13 +1560,15 @@ if ((LWS_ROLE_H1 OR LWS_ROLE_H2) AND NOT LWS_WITHOUT_TESTAPPS)
 			list(APPEND TEST_SRCS
 				${WIN32_HELPERS_PATH}/getopt.c
 				${WIN32_HELPERS_PATH}/getopt_long.c
-				${WIN32_HELPERS_PATH}/gettimeofday.c
 			)
 
 			list(APPEND TEST_HDR
 				${WIN32_HELPERS_PATH}/getopt.h
-				${WIN32_HELPERS_PATH}/gettimeofday.h
 			)
+			if (NOT LWS_WITH_LIBRESSL)
+				list(APPEND TEST_SRCS ${WIN32_HELPERS_PATH}/gettimeofday.c)
+				list(APPEND TEST_HDR ${WIN32_HELPERS_PATH}/gettimeofday.h)
+			endif()
 		endif(WIN32)
 
 		source_group("Headers Private"   FILES ${TEST_HDR})
@@ -1741,13 +1741,15 @@ if ((LWS_ROLE_H1 OR LWS_ROLE_H2) AND NOT LWS_WITHOUT_TESTAPPS)
 			list(APPEND PLUGIN_SRCS
 				${WIN32_HELPERS_PATH}/getopt.c
 				${WIN32_HELPERS_PATH}/getopt_long.c
-				${WIN32_HELPERS_PATH}/gettimeofday.c
 			)
 
 			list(APPEND PLUGIN_HDR
 				${WIN32_HELPERS_PATH}/getopt.h
-				${WIN32_HELPERS_PATH}/gettimeofday.h
 			)
+			if (NOT LWS_WITH_LIBRESSL)
+				list(APPEND PLUGIN_SRCS ${WIN32_HELPERS_PATH}/gettimeofday.c)
+				list(APPEND PLUGIN_HDR ${WIN32_HELPERS_PATH}/gettimeofday.h)
+			endif()
 		endif(WIN32)
 
 		source_group("Headers Private"   FILES ${PLUGIN_HDR})
@@ -1882,13 +1884,15 @@ if (LWS_WITH_LWSWS)
 			list(APPEND LWSWS_SRCS
 				${WIN32_HELPERS_PATH}/getopt.c
 				${WIN32_HELPERS_PATH}/getopt_long.c
-				${WIN32_HELPERS_PATH}/gettimeofday.c
 			)
 
 			list(APPEND LWSWS_HDR
 				${WIN32_HELPERS_PATH}/getopt.h
-				${WIN32_HELPERS_PATH}/gettimeofday.h
 			)
+			if (NOT LWS_WITH_LIBRESSL)
+				list(APPEND LWSWS_SRCS ${WIN32_HELPERS_PATH}/gettimeofday.c)
+				list(APPEND LWSWS_HDR ${WIN32_HELPERS_PATH}/gettimeofday.h)
+			endif()
 		endif(WIN32)
 
 		source_group("Headers Private"   FILES ${LWSWS_HDR})
